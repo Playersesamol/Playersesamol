@@ -8,6 +8,7 @@ public class PlayerController : MonoBehaviour
     public float jumpForce = 10f;
     public float acceleration = 10f;
     public float deceleration = 10f;
+    public float coyoteTime = 0.2f;
     public float maxSpeed = 5f;
     public LayerMask groundLayer;
     public Transform respawnPoint;
@@ -17,6 +18,7 @@ public class PlayerController : MonoBehaviour
     private bool isGrounded;
     private bool canJump;
     private int jumpCount;
+    private float timeSinceGrounded;
 
     private void Start()
     {
@@ -29,11 +31,17 @@ public class PlayerController : MonoBehaviour
     {
         isGrounded = Physics2D.BoxCast(col.bounds.center, col.bounds.size, 0f, Vector2.down, 0.1f, groundLayer);
 
-        if (isGrounded)
-        {
-            canJump = true;
-            jumpCount = 0;
-        }
+       if (isGrounded)
+    {
+        canJump = true;
+        jumpCount = 0;
+        timeSinceGrounded = 0f; // resetear el tiempo
+        animator.SetBool("IsJumping", false);
+    }
+    else
+    {
+        timeSinceGrounded += Time.deltaTime; // actualizar el tiempo
+    }
 
         float moveInput = Input.GetAxisRaw("Horizontal");
         if (moveInput != 0)
@@ -84,10 +92,15 @@ public class PlayerController : MonoBehaviour
 
     private void Jump()
     {
-        rb.velocity = new Vector2(rb.velocity.x, jumpForce);
-        animator.SetTrigger("Jump");
+        if (canJump || timeSinceGrounded < coyoteTime)
+        {
+            rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+            animator.SetBool("IsJumping", true);
+            canJump = false;
+            jumpCount++;
+        }
     }
-    
+
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (other.CompareTag("Box"))
